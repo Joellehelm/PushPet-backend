@@ -1,13 +1,13 @@
 # PushPet Backend
 
-Rails API-only backend for PushPet. It fetches public GitHub data server-side, computes individual Pushpets, and updates one shared Community Pushpet. No login and no database are required for the MVP.
+Rails API-only backend for PushPet. It fetches public GitHub data server-side, computes individual Pushpets, and updates one shared Community Pushpet. No login is required, but the app now uses Postgres for hatched pets, leaderboard entries, and shared community state.
 
 ## Setup
 
 ```powershell
 cd C:\Users\Joelle\Desktop\PushPet\PushPet-backend
 bundle install
-Copy-Item .env.example .env
+.\bin\local-postgres.ps1
 ```
 
 Set these environment variables as needed:
@@ -26,6 +26,7 @@ bundle exec rails server -p 3004
 API routes:
 
 ```text
+GET   /api/v1/status
 GET   /api/v1/pets/:username
 GET   /api/v1/community_pet
 PATCH /api/v1/community_pet/customization
@@ -33,13 +34,14 @@ PATCH /api/v1/community_pet/customization
 
 ## Tests
 
-The app intentionally skips Rails' database-backed test setup. Run the lightweight request suite directly:
+Run the request suite after starting the local database:
 
 ```powershell
+.\bin\local-postgres.ps1
 bundle exec ruby -Itest test/requests/pushpet_api_test.rb
 ```
 
-The tests stub GitHub responses, so they run fast and do not need network access.
+The tests stub GitHub responses, so they run fast and do not need network access, but they do need Postgres.
 
 ## Deployment
 
@@ -62,16 +64,16 @@ Required production environment variables:
 ```text
 FRONTEND_URL=https://your-production-frontend-origin
 RAILS_ENV=production
+DATABASE_URL=postgresql://...
 SECRET_KEY_BASE=generate_on_render_or_use_rails_secret
 ```
+
+When deploying with `render.yaml`, Render provisions `pushpet-db` and injects `DATABASE_URL` from that database automatically.
 
 Optional:
 
 ```text
 GITHUB_TOKEN=github_token_for_higher_public_api_limits
-COMMUNITY_PET_STORE_PATH=tmp/community_pet.production.json
 ```
-
-Community state is currently JSON-backed in `tmp/community_pet.json`, which is suitable for the competition MVP but ephemeral on many hosting platforms.
 
 `FRONTEND_ORIGIN` is still accepted as a backwards-compatible alias for `FRONTEND_URL`.

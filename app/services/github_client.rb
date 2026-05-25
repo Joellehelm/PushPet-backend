@@ -5,6 +5,9 @@ require "net/http"
 class GithubClient
   API_ROOT = "https://api.github.com"
   CACHE_TTL = 5.minutes
+  OPEN_TIMEOUT = 4
+  READ_TIMEOUT = 8
+  WRITE_TIMEOUT = 4
 
   class RequestError < StandardError; end
   class NotFoundError < RequestError; end
@@ -51,7 +54,14 @@ class GithubClient
     request["Authorization"] = "Bearer #{github_token}" if github_token.present?
     request["If-None-Match"] = cached[:etag] if cached&.dig(:etag).present?
 
-    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+    response = Net::HTTP.start(
+      uri.hostname,
+      uri.port,
+      use_ssl: true,
+      open_timeout: OPEN_TIMEOUT,
+      read_timeout: READ_TIMEOUT,
+      write_timeout: WRITE_TIMEOUT
+    ) do |http|
       http.request(request)
     end
 

@@ -14,7 +14,9 @@ class ApiTest < Minitest::Test
 
   def setup
     Rails.cache.clear
-    FileUtils.rm_f(CommunityPetStore::STORE_PATH)
+    CommunityPetState.delete_all
+    LeaderboardEntry.delete_all
+    IndividualPushpet.delete_all
   end
 
   def json
@@ -23,6 +25,13 @@ class ApiTest < Minitest::Test
 
   def get_json(path)
     get path, {}, { "HTTP_ACCEPT" => "application/json" }
+  end
+
+  def post_json(path, payload)
+    post path, payload.to_json, {
+      "CONTENT_TYPE" => "application/json",
+      "HTTP_ACCEPT" => "application/json"
+    }
   end
 
   def patch_json(path, payload)

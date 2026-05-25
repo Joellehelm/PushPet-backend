@@ -2,6 +2,7 @@ class CommunityPetBuilder
   DEFAULT_NAME = "Pushpet Prime"
   DEFAULT_TITLE = "Community Pushpet"
   DEFAULT_OUTFIT = "none"
+  DEFAULT_ENVIRONMENT = "petplace1"
   CONTRIBUTION_DEDUPE_TTL = 10.minutes
 
   def self.default_state
@@ -10,10 +11,11 @@ class CommunityPetBuilder
       featured_name: DEFAULT_NAME,
       display_title: DEFAULT_TITLE,
       outfit: DEFAULT_OUTFIT,
+      environment: DEFAULT_ENVIRONMENT,
       community_score: 0,
       level: 1,
-      evolution_stage: "hatchling",
-      mood: "cozy",
+      evolution_stage: "egg",
+      mood: "idle",
       hunger: 45,
       happiness: 55,
       dominant_language: nil,

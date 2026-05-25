@@ -15,6 +15,7 @@ class LeaderboardEntry < ApplicationRecord
     entry.color = pushpet&.color || entry.color || "blue"
     entry.accessory = pushpet&.accessory || entry.accessory || "none"
     entry.equipped_accessories = pushpet&.equipped_accessories || entry.equipped_accessories || {}
+    entry.background = pushpet&.background || entry.background || "petplace1"
     entry.last_seen_at = Time.current
     entry.save!
     entry
@@ -40,6 +41,7 @@ class LeaderboardEntry < ApplicationRecord
       color: color,
       accessory: accessory,
       equipped: equipped_accessories.to_h,
+      background: background,
       last_seen_at: last_seen_at&.iso8601
     }
   end

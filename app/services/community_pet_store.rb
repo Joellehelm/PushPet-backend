@@ -1,4 +1,5 @@
 require "singleton"
+require "active_record"
 
 class CommunityPetStore
   include Singleton
@@ -17,7 +18,7 @@ class CommunityPetStore
     end
   end
 
-  def update_customization(caretaker_username:, title: nil, name: nil, outfit: nil)
+  def update_customization(caretaker_username:, title: nil, name: nil, outfit: nil, environment: nil)
     synchronize do
       state = enrich_state(read_state)
       top_caretaker = state[:top_caretaker]
@@ -32,6 +33,7 @@ class CommunityPetStore
         display_title: clean_value(title, fallback: state[:display_title] || state[:title], max_length: 40),
         featured_name: clean_value(name, fallback: state[:featured_name] || state[:name], max_length: 28),
         outfit: allowed_outfit(outfit, state),
+        environment: allowed_environment(environment, state),
         history: customization_feed(state, caretaker_username),
         updated_at: Time.current.iso8601
       )
@@ -50,8 +52,6 @@ class CommunityPetStore
 
   def read_state
     normalize_state(CommunityPetState.global.state.deep_symbolize_keys)
-  rescue ActiveRecord::ActiveRecordError
-    fresh_default_state
   end
 
   def write_state(state)
@@ -70,6 +70,22 @@ class CommunityPetStore
     allowed_ids << "caretaker_crown"
     allowed_ids << "none"
     allowed_ids.include?(requested) ? requested : state[:outfit]
+  end
+
+  def allowed_environment(environment, state)
+    requested = environment.to_s.strip
+    fallback = state[:environment] || CommunityPetBuilder::DEFAULT_ENVIRONMENT
+    return fallback if requested.blank?
+
+    aliases = {
+      "aqua" => "petplace1",
+      "sunny" => "petplace2",
+      "garden" => "petplace2",
+      "night" => "petplace3"
+    }
+    normalized = aliases.fetch(requested, requested)
+
+    %w[petplace1 petplace2 petplace3].include?(normalized) ? normalized : fallback
   end
 
   def clean_value(value, fallback:, max_length:)
@@ -103,6 +119,9 @@ class CommunityPetStore
     normalized = default_state.merge(state)
     normalized[:featured_name] ||= state[:name] || default_state[:featured_name]
     normalized[:display_title] ||= state[:title] || default_state[:display_title]
+    normalized[:environment] = allowed_environment(normalized[:environment], default_state)
+    normalized[:evolution_stage] = default_state[:evolution_stage] if normalized[:community_score].to_i.zero? && normalized[:evolution_stage] == "hatchling"
+    normalized[:mood] = default_state[:mood] if normalized[:community_score].to_i.zero? && normalized[:mood] == "cozy"
     normalized[:history] = state[:history] || state[:feed] || default_state[:history]
     normalized[:feed_log] = normalized[:history]
     normalized[:contributors] = normalized.fetch(:contributors, {}).to_h { |key, value| [key.to_s, value] }
@@ -117,8 +136,6 @@ class CommunityPetStore
       leaderboard: leaderboard,
       top_caretaker: leaderboard.first
     )
-  rescue ActiveRecord::ActiveRecordError
-    state
   end
 
   def mutex

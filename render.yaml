@@ -1,3 +1,9 @@
+databases:
+  - name: pushpet-db
+    plan: free
+    databaseName: pushpet_production
+    user: pushpet
+
 services:
   - type: web
     name: pushpet-backend
@@ -15,6 +21,8 @@ services:
       - key: GITHUB_TOKEN
         sync: false
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: pushpet-db
+          property: connectionString
       - key: SECRET_KEY_BASE
         generateValue: true

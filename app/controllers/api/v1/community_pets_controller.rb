@@ -10,7 +10,8 @@ module Api
           caretaker_username: customization_params[:caretaker_username],
           title: customization_params[:title],
           name: customization_params[:name],
-          outfit: customization_params[:outfit]
+          outfit: customization_params[:outfit],
+          environment: customization_params[:environment]
         )
 
         render json: { community_pet: community_pet }
@@ -21,7 +22,7 @@ module Api
       private
 
       def customization_params
-        params.to_unsafe_h.slice("caretaker_username", "title", "name", "outfit").symbolize_keys
+        params.to_unsafe_h.slice("caretaker_username", "title", "name", "outfit", "environment").symbolize_keys
       end
     end
   end

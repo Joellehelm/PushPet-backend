@@ -77,6 +77,7 @@ class PushpetApiTest < ApiTest
     assert_equal 0, community_pet.fetch("community_score")
     assert_equal "Pushpet Prime", community_pet.fetch("featured_name")
     assert_equal "Community Pushpet", community_pet.fetch("display_title")
+    assert_equal "petplace1", community_pet.fetch("environment")
     assert_nil community_pet.fetch("top_caretaker")
   end
 
@@ -117,7 +118,8 @@ class PushpetApiTest < ApiTest
       caretaker_username: "activecat",
       title: "Snack Captain",
       name: "Treat Beacon",
-      outfit: "typescript_visor"
+      outfit: "typescript_visor",
+      environment: "petplace3"
     }
 
     assert last_response.ok?
@@ -126,7 +128,28 @@ class PushpetApiTest < ApiTest
     assert_equal "Snack Captain", community_pet.fetch("display_title")
     assert_equal "Treat Beacon", community_pet.fetch("featured_name")
     assert_equal "typescript_visor", community_pet.fetch("outfit")
+    assert_equal "petplace3", community_pet.fetch("environment")
     assert_equal "customization", community_pet.fetch("feed_log").first.fetch("type")
+  end
+
+  def test_individual_pushpet_background_can_be_changed
+    with_github_client(active_client) do
+      post_json "/api/v1/pets/activecat/hatch", {
+        species: "star_axolotl",
+        color: "purple",
+        background: "petplace2"
+      }
+    end
+
+    assert last_response.ok?
+    assert_equal "petplace2", json.fetch("pushpet").fetch("background")
+
+    patch_json "/api/v1/pets/activecat/background", {
+      background: "petplace3"
+    }
+
+    assert last_response.ok?
+    assert_equal "petplace3", json.fetch("pushpet").fetch("background")
   end
 
   def test_invalid_users_do_not_affect_community_pet

@@ -5,14 +5,12 @@ default: &default
 
 development:
   <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
-  database: pushpet_development
+  url: <%= ENV.fetch("DATABASE_URL", "postgresql://postgres@127.0.0.1:55432/pushpet_development") %>
 
 test:
   <<: *default
-  url: <%= ENV["DATABASE_URL"] %>
-  database: pushpet_test
+  url: <%= ENV.fetch("DATABASE_URL", "postgresql://postgres@127.0.0.1:55432/pushpet_test") %>
 
 production:
   <<: *default
-  url: <%= ENV.fetch("DATABASE_URL") %>
+  url: <%= ENV["DATABASE_URL"] %>

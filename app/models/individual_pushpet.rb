@@ -3,6 +3,7 @@ class IndividualPushpet < ApplicationRecord
   COLORS = %w[blue pink green purple orange white].freeze
   ACCESSORIES = %w[none ruby_crown javascript_shades typescript_visor python_wizard_hat rust_armor_accent go_jetpack caretaker_crown].freeze
   EQUIPMENT_SLOTS = %w[head face chest legs back].freeze
+  BACKGROUNDS = %w[petplace1 petplace2 petplace3].freeze
 
   before_validation :normalize_username
   before_validation :set_defaults
@@ -11,6 +12,7 @@ class IndividualPushpet < ApplicationRecord
   validates :species, inclusion: { in: SPECIES }
   validates :color, inclusion: { in: COLORS }
   validates :accessory, inclusion: { in: ACCESSORIES }
+  validates :background, inclusion: { in: BACKGROUNDS }
 
   def self.find_by_username(username)
     where("lower(username) = ?", username.to_s.strip.downcase).first
@@ -33,6 +35,11 @@ class IndividualPushpet < ApplicationRecord
     )
   end
 
+  def update_background!(background:)
+    clean_background = BACKGROUNDS.include?(background.to_s) ? background.to_s : "petplace1"
+    update!(background: clean_background)
+  end
+
   def as_api
     {
       username: username,
@@ -40,6 +47,7 @@ class IndividualPushpet < ApplicationRecord
       color: color,
       accessory: accessory,
       equipped: equipped_accessories.to_h,
+      background: background,
       hatched_at: hatched_at&.iso8601
     }
   end
@@ -54,5 +62,6 @@ class IndividualPushpet < ApplicationRecord
     self.hatched_at ||= Time.current
     self.equipped_accessories ||= {}
     self.accessory = "none" if accessory.blank?
+    self.background = "petplace1" if background.blank?
   end
 end
