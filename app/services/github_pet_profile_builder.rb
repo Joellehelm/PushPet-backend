@@ -106,6 +106,7 @@ class GithubPetProfileBuilder
       if event["type"] == "PushEvent"
         push_count = event.dig("payload", "size").to_i
         push_count = event.dig("payload", "commits").to_a.length if push_count.zero?
+        push_count = 1 if push_count.zero?
         pushes_30d += push_count if created_at >= 30.days.ago
         pushes_7d += push_count if created_at >= 7.days.ago
       elsif event["type"] == "PullRequestEvent" && created_at >= 30.days.ago

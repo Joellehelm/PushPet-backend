@@ -56,6 +56,19 @@ class PushpetApiTest < ApiTest
     assert pet.fetch("feed_log").any? { |item| item.fetch("type") == "level" }
   end
 
+  def test_push_event_without_size_or_commits_counts_as_one_push
+    with_github_client(elided_push_payload_client) do
+      get_json "/api/v1/pets/quietpushcat"
+    end
+
+    assert last_response.ok?
+    pet = json.fetch("pet")
+
+    assert_equal 1, pet.fetch("recent_pushes_7d")
+    assert_equal 1, pet.fetch("recent_pushes_30d")
+    assert pet.fetch("pet_score").positive?
+  end
+
   def test_degraded_rate_limited_response_path
     with_github_client(degraded_client) do
       get_json "/api/v1/pets/cachecat"

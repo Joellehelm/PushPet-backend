@@ -109,6 +109,33 @@ class ApiTest < Minitest::Test
     )
   end
 
+  def elided_push_payload_client
+    now = Time.current
+    FakeGithubClient.new(
+      username: "quietpushcat",
+      events: [
+        {
+          "type" => "PushEvent",
+          "created_at" => now.iso8601,
+          "repo" => { "name" => "quietpushcat/app" },
+          "payload" => {
+            "ref" => "refs/heads/main",
+            "head" => "abc123",
+            "before" => "def456"
+          },
+          "actor" => { "login" => "quietpushcat" }
+        }
+      ],
+      repos: [
+        repo("app", "quietpushcat", now)
+      ],
+      languages: {
+        "app" => { "Ruby" => 1_000 }
+      },
+      commits: {}
+    )
+  end
+
   def not_found_client
     NotFoundGithubClient.new
   end
