@@ -90,6 +90,8 @@ class PushpetApiTest < ApiTest
     assert_equal 0, community_pet.fetch("community_score")
     assert_equal "Pushpet Prime", community_pet.fetch("featured_name")
     assert_equal "Community Pushpet", community_pet.fetch("display_title")
+    assert_equal "goat_dragon", community_pet.fetch("species")
+    assert_equal "purple", community_pet.fetch("color")
     assert_equal "petplace1", community_pet.fetch("environment")
     assert_nil community_pet.fetch("top_caretaker")
   end
@@ -107,6 +109,27 @@ class PushpetApiTest < ApiTest
     assert_equal "activecat", community_pet.fetch("top_caretaker").fetch("username")
     assert_equal 3, community_pet.fetch("total_recent_pushes")
     assert_equal 2, community_pet.fetch("total_recent_prs")
+  end
+
+  def test_lookup_persists_user_in_leaderboard_without_relookup
+    with_github_client(active_client) do
+      get_json "/api/v1/pets/activecat"
+    end
+
+    assert last_response.ok?
+
+    get_json "/api/v1/leaderboard"
+    assert last_response.ok?
+    persisted_entry = json.fetch("leaderboard").find { |entry| entry.fetch("username") == "activecat" }
+
+    assert persisted_entry
+    assert persisted_entry.fetch("score").positive?
+
+    get_json "/api/v1/community_pet"
+    assert last_response.ok?
+    community_entry = json.fetch("community_pet").fetch("leaderboard").find { |entry| entry.fetch("username") == "activecat" }
+
+    assert community_entry
   end
 
   def test_duplicate_username_lookup_does_not_unfairly_inflate_community_stats
@@ -131,6 +154,8 @@ class PushpetApiTest < ApiTest
       caretaker_username: "activecat",
       title: "Snack Captain",
       name: "Treat Beacon",
+      species: "star_axolotl",
+      color: "blue",
       outfit: "typescript_visor",
       environment: "petplace3"
     }
@@ -140,9 +165,21 @@ class PushpetApiTest < ApiTest
 
     assert_equal "Snack Captain", community_pet.fetch("display_title")
     assert_equal "Treat Beacon", community_pet.fetch("featured_name")
+    assert_equal "star_axolotl", community_pet.fetch("species")
+    assert_equal "blue", community_pet.fetch("color")
     assert_equal "typescript_visor", community_pet.fetch("outfit")
     assert_equal "petplace3", community_pet.fetch("environment")
     assert_equal "customization", community_pet.fetch("feed_log").first.fetch("type")
+
+    with_github_client(dormant_client) { get_json "/api/v1/pets/sleepycat" }
+    refreshed_pet = json.fetch("community_pet")
+
+    assert_equal "Snack Captain", refreshed_pet.fetch("display_title")
+    assert_equal "Treat Beacon", refreshed_pet.fetch("featured_name")
+    assert_equal "star_axolotl", refreshed_pet.fetch("species")
+    assert_equal "blue", refreshed_pet.fetch("color")
+    assert_equal "typescript_visor", refreshed_pet.fetch("outfit")
+    assert_equal "petplace3", refreshed_pet.fetch("environment")
   end
 
   def test_individual_pushpet_background_can_be_changed
@@ -163,6 +200,43 @@ class PushpetApiTest < ApiTest
 
     assert last_response.ok?
     assert_equal "petplace3", json.fetch("pushpet").fetch("background")
+  end
+
+  def test_individual_pushpet_customization_can_change_name_style_and_place
+    with_github_client(active_client) do
+      post_json "/api/v1/pets/activecat/hatch", {
+        species: "star_axolotl",
+        color: "purple",
+        background: "petplace2"
+      }
+    end
+
+    assert last_response.ok?
+
+    patch_json "/api/v1/pets/activecat/customization", {
+      display_name: "Snack Sprite",
+      species: "raccoon",
+      color: "green",
+      background: "petplace3"
+    }
+
+    assert last_response.ok?
+    pushpet = json.fetch("pushpet")
+    assert_equal "Snack Sprite", pushpet.fetch("display_name")
+    assert_equal "raccoon", pushpet.fetch("species")
+    assert_equal "green", pushpet.fetch("color")
+    assert_equal "petplace3", pushpet.fetch("background")
+
+    patch_json "/api/v1/pets/activecat/customization", {
+      color: "orange"
+    }
+
+    assert last_response.ok?
+    pushpet = json.fetch("pushpet")
+    assert_equal "Snack Sprite", pushpet.fetch("display_name")
+    assert_equal "raccoon", pushpet.fetch("species")
+    assert_equal "orange", pushpet.fetch("color")
+    assert_equal "petplace3", pushpet.fetch("background")
   end
 
   def test_invalid_users_do_not_affect_community_pet

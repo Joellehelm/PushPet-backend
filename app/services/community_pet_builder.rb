@@ -1,6 +1,8 @@
 class CommunityPetBuilder
   DEFAULT_NAME = "Pushpet Prime"
   DEFAULT_TITLE = "Community Pushpet"
+  DEFAULT_SPECIES = "goat_dragon"
+  DEFAULT_COLOR = "purple"
   DEFAULT_OUTFIT = "none"
   DEFAULT_ENVIRONMENT = "petplace1"
   CONTRIBUTION_DEDUPE_TTL = 10.minutes
@@ -10,6 +12,8 @@ class CommunityPetBuilder
       state_version: 4,
       featured_name: DEFAULT_NAME,
       display_title: DEFAULT_TITLE,
+      species: DEFAULT_SPECIES,
+      color: DEFAULT_COLOR,
       outfit: DEFAULT_OUTFIT,
       environment: DEFAULT_ENVIRONMENT,
       community_score: 0,
@@ -26,6 +30,7 @@ class CommunityPetBuilder
       active_users_count: 0,
       leaderboard: [],
       contributors: {},
+      customized_fields: {},
       unlocked_outfits: [
         { id: "caretaker_crown", label: "Caretaker Crown", source_language: "Top Caretaker" }
       ],
@@ -77,6 +82,7 @@ class CommunityPetBuilder
       unlocked_outfits: outfits,
       updated_at: Time.current.iso8601
     )
+    next_state = preserve_customizations(next_state)
 
     history = update_feed(next_state, profile, skipped_duplicate)
     next_state.merge(history: history, feed_log: history)
@@ -224,6 +230,17 @@ class CommunityPetBuilder
   def outfit_for(dominant_language, outfits)
     matching = outfits.find { |outfit| outfit[:source_language] == dominant_language }
     matching&.fetch(:id, nil) || state[:outfit] || DEFAULT_OUTFIT
+  end
+
+  def preserve_customizations(next_state)
+    customized_fields = state.fetch(:customized_fields, {})
+    %i[display_title featured_name species color outfit environment].each do |field|
+      next unless customized_fields[field] && state[field].present?
+
+      next_state[field] = state[field]
+    end
+    next_state[:customized_fields] = customized_fields
+    next_state
   end
 
   def parse_time(timestamp)

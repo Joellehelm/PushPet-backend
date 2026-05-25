@@ -71,6 +71,27 @@ module Api
         }
       end
 
+      def customization
+        pushpet = IndividualPushpet.find_by_username(params[:username])
+        return render json: { error: "Pushpet has not been hatched yet" }, status: :not_found unless pushpet
+
+        pushpet.customize!(**customization_params)
+        LeaderboardEntry.find_or_initialize_by_username(pushpet.username).update!(
+          species: pushpet.species,
+          color: pushpet.color,
+          accessory: pushpet.accessory,
+          equipped_accessories: pushpet.equipped_accessories,
+          background: pushpet.background
+        )
+
+        render json: {
+          pushpet: pushpet.as_api,
+          leaderboard: LeaderboardEntry.top.map(&:as_api)
+        }
+      rescue ActiveRecord::RecordInvalid => error
+        render json: { error: error.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
+      end
+
       def background
         pushpet = IndividualPushpet.find_by_username(params[:username])
         return render json: { error: "Pushpet has not been hatched yet" }, status: :not_found unless pushpet
@@ -98,6 +119,10 @@ module Api
 
       def equipment_params
         params.to_unsafe_h.slice("slot", "accessory").symbolize_keys
+      end
+
+      def customization_params
+        params.to_unsafe_h.slice("display_name", "species", "color", "background").symbolize_keys
       end
 
       def background_params
